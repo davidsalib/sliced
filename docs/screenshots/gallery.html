@@ -1,0 +1,243 @@
+<title>Pizza Service Screens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: the app's own brick-oven look; phone-sized screens in a wrapping row, grouped by the flow they belong to. Single dark theme on purpose, matching the app. */
+:root {
+  --oven: #1a110d;
+  --oven-2: #23170f;
+  --oven-3: #2e1f17;
+  --ash: #45322a;
+  --flour: #fff3e3;
+  --dough: #c7aa92;
+  --tomato: #ff5b3d;
+  --cheese: #ffc23d;
+  --basil: #5cc983;
+  --f-display: "Bricolage Grotesque", ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif;
+  --f-body: "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--oven);
+  background-image: radial-gradient(60rem 28rem at 50% -8rem, rgb(255 91 61 / .16), transparent 70%);
+  color: var(--flour);
+  font: 16px/1.55 var(--f-body);
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 16px; padding-block: 40px 80px; display: grid; gap: 56px; }
+@media (min-width: 720px) { .wrap { padding-inline: 32px; } }
+
+header { display: grid; gap: 14px; max-width: 68ch; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand svg { width: 52px; height: 52px; flex: none; }
+h1 { margin: 0; font: 800 clamp(40px, 7vw, 64px)/0.95 var(--f-display); letter-spacing: -0.01em; text-wrap: balance; }
+h1 em { font-style: normal; color: var(--cheese); }
+.lede { margin: 0; color: var(--dough); font-size: 18px; }
+.notes { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; padding: 0; list-style: none; }
+.notes li { font: 600 13px/1 var(--f-body); color: var(--dough); background: var(--oven-2); border: 1px solid var(--ash); border-radius: 999px; padding: 9px 12px; }
+.notes b { color: var(--flour); }
+
+section { display: grid; gap: 22px; }
+.sec-head { display: grid; gap: 4px; max-width: 64ch; }
+h2 { margin: 0; font: 800 28px/1.1 var(--f-display); text-wrap: balance; }
+.sec-head p { margin: 0; color: var(--dough); }
+
+.row { display: grid; gap: 28px 24px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr)); align-items: start; }
+figure { margin: 0; display: grid; gap: 14px; min-width: 0; }
+.phone {
+  position: relative;
+  border-radius: 38px;
+  padding: 10px;
+  background: linear-gradient(160deg, #3a2a22, #140c09);
+  box-shadow: 0 0 0 1px var(--ash), 0 24px 50px -18px rgb(0 0 0 / .8);
+}
+.screen {
+  display: block;
+  width: 100%;
+  height: min(560px, 70vh);
+  overflow-y: auto;
+  border-radius: 29px;
+  background: var(--oven);
+  scrollbar-width: thin;
+  scrollbar-color: var(--ash) transparent;
+  cursor: zoom-in;
+  border: 0;
+  padding: 0;
+}
+.screen img { display: block; width: 100%; height: auto; }
+.screen:focus-visible, .close:focus-visible { outline: 2px solid var(--cheese); outline-offset: 3px; }
+.scroll-hint { position: absolute; right: 18px; bottom: 18px; font: 700 11px/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--oven); background: var(--cheese); border-radius: 999px; padding: 6px 9px; pointer-events: none; }
+figcaption { display: grid; gap: 4px; }
+figcaption b { font: 800 19px/1.2 var(--f-display); }
+figcaption span { color: var(--dough); font-size: 15px; }
+.tag { justify-self: start; font: 700 11px/1 var(--f-body); letter-spacing: .1em; text-transform: uppercase; padding: 5px 8px; border-radius: 999px; background: var(--oven-3); color: var(--cheese); }
+
+footer { color: var(--dough); font-size: 14px; border-top: 1px solid var(--ash); padding-top: 20px; max-width: 72ch; }
+footer code { font-size: 13px; color: var(--flour); background: var(--oven-2); padding: 2px 6px; border-radius: 6px; }
+
+.lightbox { position: fixed; inset: 0; z-index: 10; background: rgb(10 6 4 / .92); display: grid; justify-items: center; overflow-y: auto; padding: calc(env(safe-area-inset-top, 0px) + 56px) 16px calc(env(safe-area-inset-bottom, 0px) + 32px); }
+.lightbox img { width: min(430px, 100%); height: auto; border-radius: 24px; box-shadow: 0 30px 80px rgb(0 0 0 / .7); }
+.close { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 12px); right: 16px; font: 700 15px/1 var(--f-body); color: var(--oven); background: var(--flour); border: 0; border-radius: 999px; padding: 11px 16px; cursor: pointer; }
+@media (prefers-reduced-motion: no-preference) {
+  .phone { transition: transform .25s ease; }
+  figure:hover .phone { transform: translateY(-4px) rotate(-0.6deg); }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <svg viewBox="-50 -50 100 100" aria-hidden="true">
+        <circle r="46" fill="#e3a05c"/><circle r="39" fill="#d63a1f"/><circle r="36" fill="#ffc23d"/>
+        <path d="M0 0 L0 -46 A46 46 0 0 1 39.8 -23 Z" fill="#1a110d" transform="translate(6 -8)"/>
+        <circle cx="-14" cy="10" r="7" fill="#c23a24"/><circle cx="12" cy="16" r="6" fill="#c23a24"/><circle cx="-8" cy="-16" r="5.5" fill="#c23a24"/>
+      </svg>
+      <h1>Pizza Service, <em>screen by screen</em></h1>
+    </div>
+    <p class="lede">Every screen of the Pizza Service PWA for our community service crew: the weekly gospel and questions, prayers, neighbors, and the Costco pizza split. Captured at iPhone width from the real app components. Scroll inside a phone to see the whole page, or tap it to open it full size.</p>
+    <ul class="notes">
+      <li><b>390 pt</b> wide, 2× resolution</li>
+      <li>Sample crew and neighbors (made-up names)</li>
+      <li>Gospel text: World English Bible (public domain)</li>
+      <li>Numbers come from the app's own split and fee math</li>
+      <li>SF skyline, fog, cheese drips and pepperoni on every screen</li>
+      <li>"Thank You, God Bless your Service" whenever someone pays or chips in</li>
+    </ul>
+  </header>
+
+  <section aria-labelledby="s-week">
+    <div class="sec-head">
+      <h2 id="s-week">This week of service</h2>
+      <p>The home screen. Admins post the gospel, a message to share, and two questions; everyone gets an email. Volunteers tap a question to write down what a neighbor shared.</p>
+    </div>
+    <div class="row">
+      <figure>
+        <div class="phone"><button class="screen" type="button" aria-label="Open This week full size"><img src="week.webp" alt="Weekly message for October 4: Love one another, John 15:9 to 13, a message to share, and two questions with neighbors' answers" width="780" height="3898" loading="lazy"></button><span class="scroll-hint">Scroll</span></div>
+        <figcaption><span class="tag">Week tab</span><b>This week</b><span>The gospel (long passages fold), the message to share, the question of hope and the question of friendship and knowing, each with the answers written down so far. Earlier weeks sit below.</span></figcaption>
+      </figure>
+      <figure>
+        <div class="phone"><button class="screen" type="button" aria-label="Open Write down an answer full size"><img src="answer.webp" alt="Question of hope opened with the name box showing a live dropdown: Maria G. seen 6 times, Marcus Bell, and an option to add a new neighbor" width="780" height="4532" loading="lazy"></button><span class="scroll-hint">Scroll</span></div>
+        <figcaption><span class="tag">Tap a question</span><b>Write down an answer</b><span>Type a name and people we've met before drop down live, with how often and how recently we've seen them, so the answer joins the same person. Nobody matches? Add them as a new neighbor.</span></figcaption>
+      </figure>
+      <figure>
+        <div class="phone"><button class="screen" type="button" aria-label="Open Post the weekly message full size"><img src="editor.webp" alt="Weekly message editor with week of, title, gospel reading, gospel text, message, two questions, an email everyone checkbox, and publish and draft buttons" width="780" height="3016" loading="lazy"></button><span class="scroll-hint">Scroll</span></div>
+        <figcaption><span class="tag">Admins only</span><b>Post the weekly message</b><span>Week, title, gospel reading and text, the message, both questions. Publish emails everyone, including last week's answers and prayer requests. Drafts stay private to admins.</span></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-pray">
+    <div class="sec-head">
+      <h2 id="s-pray">Prayers and neighbors</h2>
+      <p>Prayer requests for someone by name or anonymously, and a page for each neighbor so we can remember them week to week.</p>
+    </div>
+    <div class="row">
+      <figure>
+        <div class="phone"><button class="screen" type="button" aria-label="Open Prayers full size"><img src="prayers.webp" alt="Prayers tab with a form to add a request by name or anonymously, and requests grouped into this week and last week" width="780" height="2876" loading="lazy"></button><span class="scroll-hint">Scroll</span></div>
+        <figcaption><span class="tag">Prayers tab</span><b>Prayers</b><span>Add a request by name or anonymously. Requests are grouped by week and go out with the next weekly email. Anonymous ones don't show who added them.</span></figcaption>
+      </figure>
+      <figure>
+        <div class="phone"><button class="screen" type="button" aria-label="Open Maria G. full size"><img src="neighbor.webp" alt="Neighbor page for Maria G. showing when we first met and last saw her, her answers by week, and prayer requests for her" width="780" height="2072" loading="lazy"></button><span class="scroll-hint">Scroll</span></div>
+        <figcaption><span class="tag">Neighbor page</span><b>Maria G.</b><span>Everything Maria has shared and everything we've prayed for her, across weeks. Every name in the app links here.</span></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-pizza">
+    <div class="sec-head">
+      <h2 id="s-pizza">Pizza for service day</h2>
+      <p>The Costco pizza split, now on its own tab. The pie re-cuts itself live as people chip in.</p>
+    </div>
+    <div class="row">
+      <figure>
+        <div class="phone"><button class="screen" type="button" aria-label="Open Pizza this week full size"><img src="pizza.webp" alt="Pizza tab with this week's $39.80 pizza cut into 5 and past splits" width="780" height="1688" loading="lazy"></button></div>
+        <figcaption><span class="tag">Pizza tab</span><b>Pizza this week</b><span>Open splits with a mini pizza and countdown, and what you paid on past weeks.</span></figcaption>
+      </figure>
+      <figure>
+        <div class="phone"><button class="screen" type="button" aria-label="Open Cut into 5 full size"><img src="split.webp" alt="Open split: Maya picked up $39.80, pizza cut into 5, slices in 1 day 4 hours, $8.51 each, I'm chipping in button" width="780" height="2766" loading="lazy"></button><span class="scroll-hint">Scroll</span></div>
+        <figcaption><span class="tag">Open split</span><b>Cut into 5</b><span>Countdown to slicing, today's price per person, and the button that shows what you'd pay if you chipped in now.</span></figcaption>
+      </figure>
+      <figure>
+        <div class="phone"><button class="screen" type="button" aria-label="Open Thank You, God Bless your Service full size"><img src="logged.webp" alt="Split right after logging, with the Thank You, God Bless your Service banner" width="780" height="3088" loading="lazy"></button><span class="scroll-hint">Scroll</span></div>
+        <figcaption><span class="tag">Just logged</span><b>Thank You, God Bless your Service</b><span>What the person who picked up the pizza sees right after logging it, and in their email.</span></figcaption>
+      </figure>
+      <figure>
+        <div class="phone"><button class="screen" type="button" aria-label="Open Sliced! full size"><img src="sliced.webp" alt="Sliced split with the thank-you banner, paid and declined statuses, and a Pay my share button" width="780" height="2960" loading="lazy"></button><span class="scroll-hint">Scroll</span></div>
+        <figcaption><span class="tag">After charging</span><b>Sliced!</b><span>The slices burst apart and everyone is thanked. A declined card gets a Pay my share button.</span></figcaption>
+      </figure>
+      <figure>
+        <div class="phone"><button class="screen" type="button" aria-label="Open I picked up pizza full size"><img src="new.webp" alt="I picked up pizza form with the amount, a note, and Send to the crew" width="780" height="2308" loading="lazy"></button><span class="scroll-hint">Scroll</span></div>
+        <figcaption><span class="tag">Pizza tab</span><b>I picked up pizza</b><span>Enter the amount and the preview pizza grows toppings. Sending it emails the crew.</span></figcaption>
+      </figure>
+      <figure>
+        <div class="phone"><button class="screen" type="button" aria-label="Open Wallet full size"><img src="wallet.webp" alt="Wallet with a saved card, subscribe switch, bank connected through Stripe, and history" width="780" height="2048" loading="lazy"></button><span class="scroll-hint">Scroll</span></div>
+        <figcaption><span class="tag">Wallet</span><b>Wallet</b><span>Card on file, the weekly subscribe switch, bank payouts through Stripe, and history.</span></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-in">
+    <div class="sec-head">
+      <h2 id="s-in">Getting in and running the crew</h2>
+      <p>Google sign-in, an invite link for new volunteers, and admin settings.</p>
+    </div>
+    <div class="row">
+      <figure>
+        <div class="phone"><button class="screen" type="button" aria-label="Open Landing full size"><img src="landing.webp" alt="Landing page with the demo pizza and Continue with Google" width="780" height="2092" loading="lazy"></button><span class="scroll-hint">Scroll</span></div>
+        <figcaption><span class="tag">Signed out</span><b>Landing</b><span>The demo pizza re-slices as volunteers chip in.</span></figcaption>
+      </figure>
+      <figure>
+        <div class="phone"><button class="screen" type="button" aria-label="Open Sign in full size"><img src="login.webp" alt="Sign in to Pizza Service" width="780" height="1688" loading="lazy"></button></div>
+        <figcaption><span class="tag">/login</span><b>Sign in</b><span>Where invite links land before Google sends people back.</span></figcaption>
+      </figure>
+      <figure>
+        <div class="phone"><button class="screen" type="button" aria-label="Open Almost on the crew full size"><img src="waiting.webp" alt="Almost on the crew screen" width="780" height="1688" loading="lazy"></button></div>
+        <figcaption><span class="tag">No invite yet</span><b>Almost on the crew</b><span>Someone who signs in sees nothing until they open the invite link.</span></figcaption>
+      </figure>
+      <figure>
+        <div class="phone"><button class="screen" type="button" aria-label="Open Crew settings full size"><img src="admin.webp" alt="Crew settings with slicing schedule, card fee choice, invite link, and member roles" width="780" height="3750" loading="lazy"></button><span class="scroll-hint">Scroll</span></div>
+        <figcaption><span class="tag">Admins only</span><b>Crew settings</b><span>Days before slices are sliced, charge time and time zone, card fees, the invite link, and who's an admin.</span></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <footer>
+    Captured from <code>/dev/preview/&lt;screen&gt;</code>, a dev-only route that renders the real views with sample data and returns 404 in production. Live pages read from Supabase once your keys are in.
+  </footer>
+</div>
+
+<div class="lightbox" id="lightbox" hidden>
+  <button class="close" id="lightbox-close" type="button">Close</button>
+  <img id="lightbox-img" alt="">
+</div>
+
+<script>
+(() => {
+  const box = document.getElementById("lightbox");
+  const big = document.getElementById("lightbox-img");
+  const close = document.getElementById("lightbox-close");
+  let opener = null;
+  function shut() {
+    box.hidden = true;
+    document.body.style.overflow = "";
+    if (opener) opener.focus();
+  }
+  document.querySelectorAll(".screen").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const img = btn.querySelector("img");
+      big.src = img.src;
+      big.alt = img.alt;
+      opener = btn;
+      box.hidden = false;
+      box.scrollTop = 0;
+      document.body.style.overflow = "hidden";
+      close.focus();
+    });
+  });
+  close.addEventListener("click", shut);
+  box.addEventListener("click", (e) => { if (e.target === box) shut(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !box.hidden) shut(); });
+})();
+</script>

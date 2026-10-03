@@ -1,0 +1,199 @@
+@import "tailwindcss";
+
+/* Brick-oven night: warm charcoal ground, tomato for action, melted cheese for money and highlights. */
+@theme {
+  --color-oven: #1a110d;
+  --color-oven-2: #23170f;
+  --color-oven-3: #2e1f17;
+  --color-ash: #45322a;
+  --color-flour: #fff3e3;
+  --color-dough: #c7aa92;
+  --color-tomato: #ff5b3d;
+  --color-tomato-deep: #c93a22;
+  --color-cheese: #ffc23d;
+  --color-cheese-deep: #e79c17;
+  --color-basil: #5cc983;
+  --color-crust: #e3a05c;
+
+  --font-display: var(--font-bricolage), ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif;
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --animate-wiggle: wiggle 1.6s ease-in-out infinite;
+  --animate-float: float 6s ease-in-out infinite;
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-14px) rotate(8deg); }
+}
+
+:root {
+  color-scheme: dark;
+}
+
+/* The ground lives on <html> so the SF backdrop (z-index -1) can sit between it and the page. */
+html {
+  background-color: var(--color-oven);
+  /* Faint oven-brick warmth behind everything */
+  background-image:
+    radial-gradient(60rem 30rem at 50% -10rem, rgb(255 91 61 / 0.16), transparent 70%),
+    radial-gradient(40rem 24rem at 100% 100%, rgb(255 194 61 / 0.07), transparent 70%);
+  background-attachment: fixed;
+  color: var(--color-flour);
+}
+
+body {
+  color: var(--color-flour);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  text-wrap: balance;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-cheese);
+  outline-offset: 2px;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------------------
+   San Francisco backdrop: skyline, Karl the Fog, drifting toppings
+   --------------------------------------------------------------------------- */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.sf-skyline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: clamp(150px, 26vh, 250px);
+}
+.sf-compact { display: none; height: auto; aspect-ratio: 820 / 262; }
+@media (max-width: 700px) {
+  .sf-wide { display: none; }
+  .sf-compact { display: block; }
+}
+/* On app screens the skyline sits on top of the tab bar instead of behind it. */
+body:has(nav[aria-label="Main"]) .sf-skyline { bottom: calc(68px + env(safe-area-inset-bottom, 0px)); }
+.sf-far { fill: #2a1b14; }
+.sf-near { fill: #321f17; }
+.sf-ground { fill: #1d130e; }
+.sf-line { stroke: #3a261d; }
+.sf-window { fill: #4a3125; }
+/* The bridge gets a whisper of International Orange. */
+.sf-bridge { stroke: #4a2219; fill: none; stroke-linecap: round; }
+.cable-body { fill: #5a2a1f; }
+.cable-roof { fill: #6b3a1d; }
+.cable-wheel { fill: #1d130e; }
+
+.fog {
+  position: absolute;
+  height: 120px;
+  width: 70vw;
+  min-width: 420px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 243 227 / 0.08), transparent);
+  filter: blur(12px);
+  animation: fog-roll 70s linear infinite;
+}
+.fog-a { bottom: 14vh; animation-duration: 80s; }
+.fog-b { bottom: 4vh; height: 90px; animation-duration: 55s; animation-delay: -30s; }
+.fog-c { bottom: -10px; height: 70px; animation-duration: 65s; animation-delay: -12s; opacity: 0.9; }
+@keyframes fog-roll {
+  from { transform: translateX(-80vw); }
+  to { transform: translateX(110vw); }
+}
+
+.drifter {
+  position: absolute;
+  opacity: 0.22;
+  animation: drift 15s ease-in-out infinite;
+}
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  33% { transform: translate(10px, -18px) rotate(40deg); }
+  66% { transform: translate(-8px, -6px) rotate(-25deg); }
+}
+
+/* ---------------------------------------------------------------------------
+   Cheese and pepperoni flourishes
+   --------------------------------------------------------------------------- */
+.cheese-drip { display: block; width: 100%; height: 18px; pointer-events: none; }
+.cheese-drip .drip {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  animation: drip 3.6s ease-in-out infinite;
+}
+@keyframes drip {
+  0%, 100% { transform: scaleY(0.75); }
+  55% { transform: scaleY(1.25); }
+}
+
+.pep-bob { animation: pep-bob 2.8s ease-in-out infinite; }
+@keyframes pep-bob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-3px) rotate(25deg); }
+}
+
+.cheese-pull .pull-left { animation: pull-left 1.4s ease-in-out infinite; }
+.cheese-pull .pull-right { animation: pull-right 1.4s ease-in-out infinite; }
+.cheese-pull .pull-strings { transform-box: fill-box; transform-origin: 50% 50%; animation: pull-strings 1.4s ease-in-out infinite; }
+@keyframes pull-left { 50% { transform: translateX(-10px) rotate(-4deg); } }
+@keyframes pull-right { 50% { transform: translateX(10px) rotate(4deg); } }
+@keyframes pull-strings { 50% { transform: scaleX(2.3); opacity: 0.75; } }
+
+/* A pepperoni pops onto primary buttons on hover. */
+.btn-pep { position: relative; }
+.btn-pep::after {
+  content: "";
+  position: absolute;
+  top: -7px;
+  right: 14%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #d94a30 0 45%, #a8291a 70%);
+  box-shadow: inset -2px -2px 0 rgb(126 29 18 / 0.6);
+  transform: scale(0) rotate(-60deg);
+  transition: transform 0.28s cubic-bezier(0.3, 1.7, 0.5, 1);
+}
+.btn-pep:hover::after,
+.btn-pep:focus-visible::after { transform: scale(1) rotate(0deg); }
+
+/* Cheese bubbling on the pizza while a split is open. */
+.cheese-bubble {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: bubble 3.2s ease-in-out infinite;
+}
+@keyframes bubble {
+  0%, 100% { transform: scale(0.4); opacity: 0; }
+  40% { transform: scale(1); opacity: 0.9; }
+  70% { transform: scale(1.15); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .cable-car, .fog { display: none; }
+}
