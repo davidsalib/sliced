@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "email:test": "node --env-file-if-exists=.env.local scripts/send-test-email.mjs"
+    "email:test": "node --env-file-if-exists=.env.local scripts/send-test-email.mjs",
+    "stripe:smoke": "node --env-file-if-exists=.env.local --experimental-strip-types --no-warnings scripts/stripe-smoke.mjs"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^7.0.0",

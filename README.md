@@ -54,6 +54,7 @@ Use a **US** Stripe account (connected accounts and payouts are US/USD).
    - **Webhook endpoint** (snapshot events): `payment_intent.succeeded`, `payment_intent.payment_failed` → `STRIPE_WEBHOOK_SECRET`
    - **Event destination** (thin events, Accounts v2): `v2.core.account[configuration.recipient].capability_status_updated` → `STRIPE_V2_WEBHOOK_SECRET`
    - Local: `stripe listen --forward-to localhost:3000/api/stripe/webhook`
+5. Check everything end to end in test mode: `npm run stripe:smoke`. It creates throwaway test objects (a payout account, a saved card, an off-session destination charge, a decline), checks the payer nets exactly their share, then deletes them. It refuses to run with a live key.
 
 ### 3. Resend
 1. Create an API key at resend.com and put it in `.env.local` (and in Vercel) as `RESEND_API_KEY`.
