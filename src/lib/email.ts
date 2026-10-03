@@ -6,13 +6,20 @@ import { APP_NAME } from "@/lib/brand";
 type Mail = { to: string; subject: string; html: string; text: string };
 
 let resend: Resend | null = null;
+const PLACEHOLDER = /^re_x+$/i;
+
 function client() {
-  if (!process.env.RESEND_API_KEY) return null;
-  if (!resend) resend = new Resend(process.env.RESEND_API_KEY);
+  const key = process.env.RESEND_API_KEY?.trim();
+  if (!key || PLACEHOLDER.test(key)) return null;
+  if (!resend) resend = new Resend(key);
   return resend;
 }
 
-const from = () => process.env.EMAIL_FROM ?? `${APP_NAME} <onboarding@resend.dev>`;
+/**
+ * Until a domain is verified in Resend, leave EMAIL_FROM empty: Resend's
+ * onboarding@resend.dev sender works, but only delivers to your own Resend account address.
+ */
+const from = () => process.env.EMAIL_FROM?.trim() || `${APP_NAME} <onboarding@resend.dev>`;
 
 /** Sends in batches of 100. Without RESEND_API_KEY it logs instead, so local dev works. */
 export async function sendMail(mails: Mail[]) {
@@ -26,7 +33,14 @@ export async function sendMail(mails: Mail[]) {
   for (let i = 0; i < list.length; i += 100) {
     const chunk = list.slice(i, i + 100).map((m) => ({ from: from(), ...m }));
     const { error } = await r.batch.send(chunk);
-    if (error) console.error("Resend batch failed", error);
+    if (!error) continue;
+    // A batch fails as a whole (for example in Resend's testing mode, where only your own
+    // address is allowed). Fall back to one-by-one so every email that can go out does.
+    console.error("Resend batch failed, sending one at a time:", error.message);
+    for (const mail of chunk) {
+      const res = await r.emails.send(mail);
+      if (res.error) console.error(`Resend could not send to ${mail.to}:`, res.error.message);
+    }
   }
 }
 

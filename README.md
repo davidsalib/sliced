@@ -54,7 +54,11 @@ The first person to sign in becomes admin. Everyone else joins through the invit
    - Local: `stripe listen --forward-to localhost:3000/api/stripe/webhook --forward-connect-to localhost:3000/api/stripe/webhook`
 
 ### 3. Resend
-Verify a sending domain and set `RESEND_API_KEY` and `EMAIL_FROM`. Without a key, emails are logged to the server console instead.
+1. Create an API key at resend.com and put it in `.env.local` (and in Vercel) as `RESEND_API_KEY`.
+2. Check it works: `npm run email:test -- you@example.com`.
+3. While `EMAIL_FROM` is empty, mail comes from Resend's `onboarding@resend.dev`, which only delivers to your own Resend account address. To email the whole crew, verify a domain in Resend (Domains → Add, then add its DNS records) and set `EMAIL_FROM="Pizza Service <pizza@yourdomain.com>"`.
+
+Without a key, emails are logged to the server console instead.
 
 ### 4. Vercel
 Import the GitHub repo, add every variable from `.env.example` (set `NEXT_PUBLIC_SITE_URL` to the production URL), and deploy.
