@@ -31,30 +31,49 @@ export function splitShares(amountCents: number, eaters: { id: string; isPayer: 
   return shares;
 }
 
-/** Card charge so that after Stripe's fee the platform still holds `share`. */
-export function grossUp(shareCents: number) {
-  return Math.ceil((shareCents + STRIPE_FIXED_CENTS) / (1 - STRIPE_PERCENT));
+/** Stripe's fee on one card charge, rounded up so the pool never comes up short. */
+export function stripeFee(chargeCents: number) {
+  return Math.ceil(chargeCents * STRIPE_PERCENT) + STRIPE_FIXED_CENTS;
 }
 
-export function estimatedFee(chargeCents: number) {
-  return Math.round(chargeCents * STRIPE_PERCENT) + STRIPE_FIXED_CENTS;
+/** Splits `total` into `n` near-equal whole-cent parts (earlier parts get the extra cents). */
+function evenParts(total: number, n: number) {
+  const base = Math.floor(total / n);
+  return Array.from({ length: n }, (_, i) => base + (i < total - base * n ? 1 : 0));
 }
+
+export type ChargeLine = { share: number; fee: number; charge: number };
 
 /**
- * What to charge an eater and what to pass on to the payer's bank.
- * The platform never fronts Stripe fees: either eaters cover them, or they come out of the payout.
+ * What each person being charged pays, so that whoever picked up the pizza receives
+ * every share in full and Stripe's card fees are pooled and split evenly across
+ * everyone chipping in. Each charge = their share + their slice of the fee pool;
+ * the pool always covers Stripe's fee on every charge.
  */
-export function chargePlan(shareCents: number, feesPaidBy: "eaters" | "payer") {
-  if (feesPaidBy === "eaters") {
-    return { charge: Math.max(grossUp(shareCents), STRIPE_MIN_CHARGE_CENTS), transfer: shareCents };
+export function planCharges(shares: number[]): ChargeLine[] {
+  const n = shares.length;
+  if (!n) return [];
+  let pool = shares.reduce((t, s) => t + stripeFee(s), 0);
+  for (let round = 0; round < 50; round++) {
+    const parts = evenParts(pool, n);
+    // Stripe won't charge less than $0.50; a tiny share pays a little more fee to reach it.
+    const lines = shares.map((share, i) => {
+      const charge = Math.max(share + parts[i], STRIPE_MIN_CHARGE_CENTS);
+      return { share, fee: charge - share, charge };
+    });
+    const needed = lines.reduce((t, l) => t + stripeFee(l.charge), 0);
+    const collected = lines.reduce((t, l) => t + l.fee, 0);
+    if (collected >= needed) return lines;
+    pool = needed;
   }
-  const charge = Math.max(shareCents, STRIPE_MIN_CHARGE_CENTS);
-  return { charge, transfer: Math.max(0, Math.min(shareCents, charge - estimatedFee(charge))) };
+  throw new Error("Couldn't balance the card fees.");
 }
 
-/** Rough per-person estimate for the UI. */
-export function estimateEach(amountCents: number, eaters: number, feesPaidBy: "eaters" | "payer") {
+/** Rough per-person estimate for the UI: `eaters` share the pizza, `charged` of them get a card charge. */
+export function estimateEach(amountCents: number, eaters: number, charged: number) {
   if (eaters <= 0) return null;
   const share = Math.ceil(amountCents / eaters);
-  return { share, charge: chargePlan(share, feesPaidBy).charge };
+  if (charged <= 0) return { share, charge: share };
+  const lines = planCharges(Array.from({ length: charged }, () => share));
+  return { share, charge: Math.max(...lines.map((l) => l.charge)) };
 }

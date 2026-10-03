@@ -35,8 +35,10 @@ export function RequestView({ viewer, settings, request, participants, people, i
   const payer = people.get(request.payer_id);
   const me = participants.find((p) => p.user_id === viewer.id) ?? null;
   const n = participants.length;
-  const est = estimateEach(request.amount_cents, n, settings.fees_paid_by);
-  const ifJoined = estimateEach(request.amount_cents, n + 1, settings.fees_paid_by);
+  // Everyone except whoever picked up the pizza gets a card charge.
+  const charged = participants.filter((p) => p.kind !== "payer").length;
+  const est = estimateEach(request.amount_cents, n, charged);
+  const ifJoined = estimateEach(request.amount_cents, n + 1, request.payer_id === viewer.id ? charged : charged + 1);
   const collected = participants.filter((p) => p.status === "paid").reduce((s, p) => s + (p.share_cents ?? 0), 0);
   const owed = participants.filter((p) => p.status === "failed").reduce((s, p) => s + (p.share_cents ?? 0), 0);
 
@@ -76,7 +78,7 @@ export function RequestView({ viewer, settings, request, participants, people, i
             <div className="rounded-2xl bg-oven-2 p-3">
               <p className="text-xs font-semibold tracking-wider text-dough uppercase">Each, right now</p>
               <p className="font-display text-2xl font-extrabold tabular">{est ? money(est.charge) : "—"}</p>
-              <p className="text-xs text-dough">{settings.fees_paid_by === "eaters" ? "incl. card fee" : "card fee from payout"}</p>
+              <p className="text-xs text-dough">incl. shared card fee</p>
             </div>
           </div>
         )}

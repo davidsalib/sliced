@@ -2,7 +2,7 @@
 // Creates throwaway test objects, runs the same calls the app makes, then deletes them.
 // Usage: npm run stripe:smoke
 import Stripe from "stripe";
-import { chargePlan, splitShares } from "../src/lib/split.ts";
+import { planCharges, splitShares } from "../src/lib/split.ts";
 
 const key = process.env.STRIPE_SECRET_KEY ?? "";
 if (!/^(sk|rk)_test_/.test(key)) {
@@ -82,47 +82,57 @@ try {
     bad(`transfers capability is "${status}"; outstanding: ${JSON.stringify(req.requirements?.entries?.map((e) => e.description ?? e.awaiting_action_from) ?? []).slice(0, 300)}`);
   }
 
-  step("4. Save a card, then charge it off-session as a destination charge (app's math)");
+  step("4. A $39.80 split: whoever picked up the pizza eats too, 4 others are charged off-session");
+  const shares = splitShares(3980, [{ id: "payer", isPayer: true }, ...["a", "b", "c", "d"].map((id) => ({ id, isPayer: false }))]);
+  const lines = planCharges(["a", "b", "c", "d"].map((id) => shares.get(id)));
+  const owed = lines.reduce((t, l) => t + l.share, 0);
+  const pool = lines.reduce((t, l) => t + l.fee, 0);
+  console.log(`  plan: each pays ${lines.map((l) => `$${(l.charge / 100).toFixed(2)}`).join(", ")} (shares $${(owed / 100).toFixed(2)} + fee pool $${(pool / 100).toFixed(2)} split evenly)`);
   const customer = await stripe.customers.create({ email: "eater@example.com", metadata: { smoke_test: "pizza-service" } });
   cleanup.push(() => stripe.customers.del(customer.id));
   const si = await stripe.setupIntents.create({ customer: customer.id, usage: "off_session", allowed_payment_method_types: ["card"], payment_method: "pm_card_visa", confirm: true });
   si.status === "succeeded" ? ok("card saved for weekly charges") : bad(`setup intent ${si.status}`);
+  const plan = lines[0];
 
-  // $39.80 split by the payer and 4 others; check one non-payer's charge.
-  const shares = splitShares(3980, [{ id: "payer", isPayer: true }, ...["a", "b", "c", "d"].map((id) => ({ id, isPayer: false }))]);
-  const share = shares.get("a");
-  const plan = chargePlan(share, "eaters");
   if (status === "active") {
-    const pi = await stripe.paymentIntents.create(
-      {
-        amount: plan.charge,
-        currency: "usd",
-        customer: customer.id,
-        payment_method: si.payment_method,
-        off_session: true,
-        confirm: true,
-        description: "Pizza Service smoke test",
-        transfer_data: { destination: ready.id },
-        application_fee_amount: plan.charge - plan.transfer,
-      },
-      { idempotencyKey: `smoke-${Date.now()}` },
-    );
-    pi.status === "succeeded" ? ok(`charged $${(plan.charge / 100).toFixed(2)} (share $${(share / 100).toFixed(2)} + card fee)`) : bad(`payment ${pi.status}`);
-    pi.transfer_data?.destination === ready.id ? ok("destination charge routed to the payer's account") : bad(`destination is ${pi.transfer_data?.destination}`);
-    const net = pi.amount - (pi.application_fee_amount ?? 0);
-    net === share ? ok(`payer's cut is exactly $${(net / 100).toFixed(2)}; the $${((pi.application_fee_amount ?? 0) / 100).toFixed(2)} fee covers Stripe`) : bad(`payer's cut is ${net} cents, expected ${share}`);
-    // Stripe creates the transfer and fee shortly after the charge; give it a moment.
-    let transfer;
-    for (let i = 0; i < 15 && !transfer; i++) {
-      transfer = (await stripe.transfers.list({ destination: ready.id, limit: 1 })).data[0];
-      if (!transfer) await new Promise((r) => setTimeout(r, 2000));
+    let stripeFees = 0;
+    for (const [i, line] of lines.entries()) {
+      const pi = await stripe.paymentIntents.create(
+        {
+          amount: line.charge,
+          currency: "usd",
+          customer: customer.id,
+          payment_method: si.payment_method,
+          off_session: true,
+          confirm: true,
+          description: "Pizza Service smoke test",
+          transfer_data: { destination: ready.id },
+          application_fee_amount: line.fee,
+        },
+        { idempotencyKey: `smoke-${Date.now()}-${i}` },
+      );
+      if (pi.status !== "succeeded" || pi.transfer_data?.destination !== ready.id) bad(`charge ${i + 1}: ${pi.status}`);
+      const charge = await stripe.charges.retrieve(pi.latest_charge, { expand: ["balance_transaction"] });
+      stripeFees += charge.balance_transaction?.fee ?? 0;
     }
-    transfer ? ok(`transfer of $${(transfer.amount / 100).toFixed(2)} reached the payer's account`) : console.log("  … transfer not listed yet (Stripe creates it asynchronously)");
-    const bal = await stripe.balance.retrieve({}, { stripeAccount: ready.id });
-    const pending = [...bal.pending, ...bal.available].filter((b) => b.currency === "usd").reduce((t, b) => t + b.amount, 0);
-    pending === share ? ok(`payer's Stripe balance shows $${(pending / 100).toFixed(2)}, on its way to their bank`) : console.log(`  … payer balance shows ${pending} cents so far (expected ${share})`);
+    ok(`4 cards charged, each routed to the payer's account`);
+    if (stripeFees === 0) console.log(`  … Stripe reports no fee on test charges; the $${(pool / 100).toFixed(2)} pool is sized for standard US pricing (2.9% + 30¢ per charge)`);
+    else
+      pool >= stripeFees
+        ? ok(`fee pool $${(pool / 100).toFixed(2)} covers Stripe's actual fees $${(stripeFees / 100).toFixed(2)}`)
+        : bad(`fee pool $${(pool / 100).toFixed(2)} is short of Stripe's $${(stripeFees / 100).toFixed(2)}`);
+    // Stripe creates transfers just after each charge; wait for the payer's balance to settle.
+    let received = 0;
+    for (let i = 0; i < 15 && received !== owed; i++) {
+      const bal = await stripe.balance.retrieve({}, { stripeAccount: ready.id });
+      received = [...bal.pending, ...bal.available].filter((b) => b.currency === "usd").reduce((t, b) => t + b.amount, 0);
+      if (received !== owed) await new Promise((r) => setTimeout(r, 2000));
+    }
+    received === owed
+      ? ok(`payer received the full $${(owed / 100).toFixed(2)} (every share, no fees taken out)`)
+      : bad(`payer received ${received} cents, expected ${owed}`);
   } else {
-    bad("skipped the charge: no account could receive transfers");
+    bad("skipped the charges: no account could receive transfers");
   }
 
   step("5. Declined card");

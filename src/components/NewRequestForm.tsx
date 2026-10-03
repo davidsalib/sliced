@@ -8,14 +8,14 @@ import { seatColor } from "@/lib/colors";
 import { estimateEach, money } from "@/lib/split";
 
 
-export function NewRequestForm({ subscribers, feesPaidBy, initialAmount = "" }: { subscribers: number; feesPaidBy: "eaters" | "payer"; initialAmount?: string }) {
+export function NewRequestForm({ subscribers, initialAmount = "" }: { subscribers: number; initialAmount?: string }) {
   const [state, action, pending] = useActionState<FormState, FormData>(createRequest, undefined);
   const [amount, setAmount] = useState(initialAmount);
   const [eats, setEats] = useState(true);
 
   const cents = Math.round((parseFloat(amount) || 0) * 100);
   const eaters = subscribers + (eats ? 1 : 0);
-  const est = cents >= 100 ? estimateEach(cents, Math.max(eaters, 1), feesPaidBy) : null;
+  const est = cents >= 100 ? estimateEach(cents, Math.max(eaters, 1), subscribers) : null;
   // More money, more pizza: toppings grow with the amount.
   const toppings = Math.min(22, 4 + Math.round(cents / 400));
 
@@ -74,7 +74,7 @@ export function NewRequestForm({ subscribers, feesPaidBy, initialAmount = "" }: 
         </p>
         {est && (
           <p className="mt-1 text-dough">
-            Right now that&apos;s about <b className="text-flour tabular">{money(est.charge)}</b> each. It drops as more people join.
+            Right now that&apos;s about <b className="text-flour tabular">{money(est.charge)}</b> each, including an even share of the card fees. You get back every cent. It drops as more people join.
           </p>
         )}
       </motion.div>

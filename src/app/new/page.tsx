@@ -27,7 +27,7 @@ export default async function NewRequest() {
           </Link>
         </div>
       ) : (
-        <NewRequestForm subscribers={subscribers} feesPaidBy={settings.fees_paid_by} />
+        <NewRequestForm subscribers={subscribers} />
       )}
     </Shell>
   );

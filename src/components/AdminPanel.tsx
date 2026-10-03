@@ -102,23 +102,12 @@ export function AdminPanel({ settings, inviteUrl, people }: { settings: Settings
           </label>
         </div>
 
-        <fieldset className="grid gap-2">
-          <legend className="mb-2 text-sm font-semibold text-dough">Card fees (about 2.9% + 30¢ per charge)</legend>
-          <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-oven-2 p-3">
-            <input type="radio" name="fees_paid_by" value="eaters" defaultChecked={settings.fees_paid_by === "eaters"} className="mt-1 accent-tomato" />
-            <span>
-              <span className="block font-semibold">Everyone chipping in covers them</span>
-              <span className="block text-xs text-dough">Each charge is a little higher. Whoever picked up the pizza gets back exactly what they spent.</span>
-            </span>
-          </label>
-          <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-oven-2 p-3">
-            <input type="radio" name="fees_paid_by" value="payer" defaultChecked={settings.fees_paid_by === "payer"} className="mt-1 accent-tomato" />
-            <span>
-              <span className="block font-semibold">Whoever picked up the pizza covers them</span>
-              <span className="block text-xs text-dough">Everyone pays an even split. Fees come out of the payout.</span>
-            </span>
-          </label>
-        </fieldset>
+        <div className="grid gap-1 rounded-2xl bg-oven-2 p-4">
+          <p className="font-semibold">Card fees are shared</p>
+          <p className="text-sm text-dough">
+            Stripe charges about 2.9% + 30¢ per card. Those fees are pooled and split evenly across everyone chipping in, so whoever picked up the pizza gets back every cent.
+          </p>
+        </div>
 
         <label className="flex cursor-pointer items-center gap-3 text-sm">
           <input type="checkbox" name="apply_open" className="size-5 accent-tomato" />

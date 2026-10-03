@@ -4,8 +4,6 @@ import { ensureCustomer } from "@/lib/billing";
 import { getBilling, getRequest } from "@/lib/data";
 import { stripe } from "@/lib/stripe";
 import { adminDb } from "@/lib/supabase/admin";
-import { chargePlan } from "@/lib/split";
-import { getSettings } from "@/lib/data";
 
 /** Pay-now for a share whose automatic charge failed. Returns a PaymentIntent client secret. */
 export async function POST(_req: Request, ctx: RouteContext<"/api/requests/[id]/pay">) {
@@ -19,19 +17,20 @@ export async function POST(_req: Request, ctx: RouteContext<"/api/requests/[id]/
     }
     const payerBilling = await getBilling(request.payer_id);
     if (!payerBilling.stripe_account_id) throw new Error("The payer hasn't connected a bank yet.");
-    const settings = await getSettings();
-    const plan = chargePlan(me.share_cents, settings.fees_paid_by);
+    // Same amount set at slicing: their share plus their even slice of the card fees.
+    const charge = Math.max(me.charge_cents ?? 0, me.share_cents);
+    const fee = charge - me.share_cents;
     const customer = await ensureCustomer(viewer);
 
     const pi = await stripe().paymentIntents.create(
       {
-        amount: plan.charge,
+        amount: charge,
         currency: "usd",
         customer,
         allowed_payment_method_types: ["card"],
         setup_future_usage: "off_session",
         transfer_data: { destination: payerBilling.stripe_account_id },
-        ...(plan.charge > plan.transfer ? { application_fee_amount: plan.charge - plan.transfer } : {}),
+        ...(fee > 0 ? { application_fee_amount: fee } : {}),
         transfer_group: `request_${id}`,
         metadata: { request_id: id, user_id: viewer.id, share_cents: String(me.share_cents), retry: "1" },
       },
@@ -39,10 +38,10 @@ export async function POST(_req: Request, ctx: RouteContext<"/api/requests/[id]/
     );
     await adminDb()
       .from("participants")
-      .update({ charge_cents: plan.charge, payment_intent_id: pi.id })
+      .update({ charge_cents: charge, payment_intent_id: pi.id })
       .eq("request_id", id)
       .eq("user_id", viewer.id);
-    return NextResponse.json({ clientSecret: pi.client_secret, amount: plan.charge });
+    return NextResponse.json({ clientSecret: pi.client_secret, amount: charge });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 400 });
   }

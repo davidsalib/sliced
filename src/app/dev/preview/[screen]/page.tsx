@@ -11,7 +11,7 @@ import { answerRows, groupByWeek, prayerRows } from "@/lib/rows";
 import { RequestView } from "@/components/views/RequestView";
 import { WalletView } from "@/components/views/WalletView";
 import { displayName } from "@/lib/auth-shared";
-import { chargePlan, splitShares } from "@/lib/split";
+import { planCharges, splitShares } from "@/lib/split";
 import type { Answer, Neighbor, NeighborHit, Participant, Prayer, Profile, Settings, SpendRequest, WeeklyPost } from "@/lib/types";
 
 /**
@@ -30,7 +30,6 @@ const settings: Settings = {
   days_before_slice: 2,
   charge_time: "18:00:00",
   timezone: "America/Los_Angeles",
-  fees_paid_by: "eaters",
   invite_code: "a1b2c3d4e5f6",
   updated_at: iso(now),
 };
@@ -100,6 +99,8 @@ const slicedReq: SpendRequest = {
 };
 const slicedIds = ["u-jordan", "u-maya", "u-priya", "u-sam", "u-theo", "u-omar"];
 const shares = splitShares(slicedReq.amount_cents, slicedIds.map((id) => ({ id, isPayer: id === "u-jordan" })));
+const chargedIds = slicedIds.filter((id) => id !== "u-jordan");
+const lines = new Map(planCharges(chargedIds.map((id) => shares.get(id)!)).map((l, i) => [chargedIds[i], l]));
 const slicedParts: Participant[] = slicedIds.map((id, i) => {
   const share = shares.get(id)!;
   const isPayer = id === "u-jordan";
@@ -109,7 +110,7 @@ const slicedParts: Participant[] = slicedIds.map((id, i) => {
     user_id: id,
     kind: isPayer ? "payer" : id === "u-omar" ? "once" : "subscriber",
     share_cents: share,
-    charge_cents: isPayer ? 0 : chargePlan(share, "eaters").charge,
+    charge_cents: isPayer ? 0 : lines.get(id)!.charge,
     status: isPayer ? "covered" : failed ? "failed" : "paid",
     payment_intent_id: null,
     failure: failed ? "Your card was declined." : null,
@@ -123,7 +124,7 @@ const olderParts: Participant[] = slicedParts.map((p) => ({
   request_id: olderReq.id,
   kind: p.user_id === "u-maya" ? "payer" : "subscriber",
   status: p.user_id === "u-maya" ? "covered" : "paid",
-  charge_cents: p.user_id === "u-maya" ? 0 : chargePlan(Math.round(3980 / 6), "eaters").charge,
+  charge_cents: p.user_id === "u-maya" ? 0 : planCharges(Array.from({ length: 5 }, () => Math.round(3980 / 6)))[0].charge,
   failure: null,
 }));
 
@@ -287,7 +288,7 @@ export default async function Preview(props: PageProps<"/dev/preview/[screen]">)
         <Shell viewer={viewer} crewName={settings.crew_name} activeHref="/new">
           <h1 className="font-display text-4xl font-extrabold">I picked up pizza</h1>
           <p className="mt-1 text-dough">Log what you spent on this week&apos;s service pizza. The crew gets an email and the pie is sliced Sat, Oct 4, 6:00 PM.</p>
-          <NewRequestForm subscribers={4} feesPaidBy="eaters" initialAmount="39.80" />
+          <NewRequestForm subscribers={4} initialAmount="39.80" />
         </Shell>
       );
     case "wallet":

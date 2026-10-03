@@ -19,7 +19,6 @@ export type Settings = {
   days_before_slice: number;
   charge_time: string; // "HH:MM:SS"
   timezone: string;
-  fees_paid_by: "eaters" | "payer";
   invite_code: string;
   updated_at: string;
 };

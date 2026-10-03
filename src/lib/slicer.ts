@@ -4,7 +4,7 @@ import { stripe, accountCanReceive } from "@/lib/stripe";
 import { adminDb } from "@/lib/supabase/admin";
 import { getBilling, getProfilesById, getSettings } from "@/lib/data";
 import { notifyPayerNeedsBank, notifySliced } from "@/lib/notify";
-import { chargePlan, splitShares, STRIPE_MIN_CHARGE_CENTS } from "@/lib/split";
+import { planCharges, splitShares, STRIPE_MIN_CHARGE_CENTS, type ChargeLine } from "@/lib/split";
 import { displayName } from "@/lib/auth";
 import type { Participant, SpendRequest } from "@/lib/types";
 
@@ -61,6 +61,11 @@ export async function sliceRequest(id: string): Promise<SliceResult> {
     participants.map((p) => ({ id: p.user_id, isPayer: p.kind === "payer" })),
   );
 
+  // Everyone being charged splits Stripe's card fees evenly, so the payer gets every share in full.
+  const owing = participants.filter((p) => p.kind !== "payer" && (shares.get(p.user_id) ?? 0) >= STRIPE_MIN_CHARGE_CENTS / 2);
+  const plan = new Map<string, ChargeLine>();
+  planCharges(owing.map((p) => shares.get(p.user_id) ?? 0)).forEach((line, i) => plan.set(owing[i].user_id, line));
+
   let transferTotal = 0;
   let charged = 0;
   let failed = 0;
@@ -71,10 +76,10 @@ export async function sliceRequest(id: string): Promise<SliceResult> {
       await db.from("participants").update({ share_cents: share, charge_cents: 0, status: "covered" }).eq("request_id", id).eq("user_id", p.user_id);
       continue;
     }
-    const plan = chargePlan(share, settings.fees_paid_by);
-    const base = { share_cents: share, charge_cents: plan.charge };
+    const line = plan.get(p.user_id);
+    const base = { share_cents: share, charge_cents: line?.charge ?? 0 };
 
-    if (share < STRIPE_MIN_CHARGE_CENTS / 2) {
+    if (!line) {
       // A few cents isn't worth a card charge; the payer covers it.
       await db.from("participants").update({ ...base, charge_cents: 0, status: "covered" }).eq("request_id", id).eq("user_id", p.user_id);
       continue;
@@ -91,7 +96,7 @@ export async function sliceRequest(id: string): Promise<SliceResult> {
     try {
       const pi = await stripe().paymentIntents.create(
         {
-          amount: plan.charge,
+          amount: line.charge,
           currency: "usd",
           customer: billing.stripe_customer_id,
           payment_method: billing.payment_method_id,
@@ -99,9 +104,9 @@ export async function sliceRequest(id: string): Promise<SliceResult> {
           confirm: true,
           description: `Service pizza with ${displayName(payer)} (${settings.crew_name})`,
           statement_descriptor_suffix: "PIZZA",
-          // Destination charge: the payer receives the charge minus the platform fee (covers Stripe fees).
+          // Destination charge: the payer receives exactly the share; the fee slice pays Stripe.
           transfer_data: { destination },
-          ...(plan.charge > plan.transfer ? { application_fee_amount: plan.charge - plan.transfer } : {}),
+          ...(line.fee > 0 ? { application_fee_amount: line.fee } : {}),
           transfer_group: `request_${id}`,
           metadata: { request_id: id, user_id: p.user_id, share_cents: String(share) },
         },
@@ -110,7 +115,7 @@ export async function sliceRequest(id: string): Promise<SliceResult> {
       const paid = pi.status === "succeeded";
       if (paid) {
         charged++;
-        transferTotal += plan.transfer;
+        transferTotal += line.share;
       }
       await db
         .from("participants")

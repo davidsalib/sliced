@@ -197,12 +197,10 @@ export async function updateSettings(_prev: FormState, form: FormData): Promise<
     const days = Number(form.get("days_before_slice"));
     const time = String(form.get("charge_time") ?? "");
     const tz = String(form.get("timezone") ?? "");
-    const fees = String(form.get("fees_paid_by") ?? "");
     const name = String(form.get("crew_name") ?? "").trim().slice(0, 40);
     if (!Number.isInteger(days) || days < 0 || days > 14) return { error: "Days before slicing must be 0 to 14." };
     if (!/^\d{2}:\d{2}$/.test(time)) return { error: "Pick a charge time." };
     if (!isValidTimeZone(tz)) return { error: "That time zone isn't recognized." };
-    if (fees !== "eaters" && fees !== "payer") return { error: "Pick who covers card fees." };
 
     await adminDb()
       .from("settings")
@@ -211,7 +209,6 @@ export async function updateSettings(_prev: FormState, form: FormData): Promise<
         days_before_slice: days,
         charge_time: time,
         timezone: tz,
-        fees_paid_by: fees,
         updated_at: new Date().toISOString(),
       })
       .eq("id", 1);
