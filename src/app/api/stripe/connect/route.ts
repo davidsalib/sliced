@@ -10,11 +10,16 @@ export async function GET() {
   if (!viewer || !isMember(viewer)) return NextResponse.redirect(`${env.siteUrl()}/login?next=/wallet`);
   try {
     const account = await ensureConnectedAccount(viewer);
-    const link = await stripe().accountLinks.create({
+    const link = await stripe().v2.core.accountLinks.create({
       account,
-      type: "account_onboarding",
-      refresh_url: `${env.siteUrl()}/api/stripe/connect`,
-      return_url: `${env.siteUrl()}/api/stripe/connect/return`,
+      use_case: {
+        type: "account_onboarding",
+        account_onboarding: {
+          refresh_url: `${env.siteUrl()}/api/stripe/connect`,
+          return_url: `${env.siteUrl()}/api/stripe/connect/return`,
+          collection_options: { fields: "eventually_due" },
+        },
+      },
     });
     return NextResponse.redirect(link.url, 303);
   } catch (e) {

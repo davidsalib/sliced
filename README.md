@@ -46,12 +46,14 @@ Card fees: by default eaters cover them (each charge is grossed up for 2.9% + 30
 The first person to sign in becomes admin. Everyone else joins through the invite link on the **Crew** tab.
 
 ### 2. Stripe
-1. Enable **Connect** (Express accounts, US) on the account.
-2. API keys → env vars.
-3. Webhooks → add endpoint `https://<your-app>/api/stripe/webhook`:
-   - **Your account** events: `payment_intent.succeeded`, `payment_intent.payment_failed` → `STRIPE_WEBHOOK_SECRET`
-   - **Connected accounts** events: `account.updated` → `STRIPE_CONNECT_WEBHOOK_SECRET`
-   - Local: `stripe listen --forward-to localhost:3000/api/stripe/webhook --forward-connect-to localhost:3000/api/stripe/webhook`
+Use a **US** Stripe account (connected accounts and payouts are US/USD).
+1. Turn on **Connect**, then open Settings → Connect → **Platform profile** and accept responsibility for losses (negative balances and disputes). The pizza split uses destination charges, which need the platform as the losses collector; Stripe refuses to create payout accounts until this is done.
+2. API keys → `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` and `STRIPE_SECRET_KEY`.
+3. Whoever picks up pizza gets an **Accounts v2** recipient account with the Express Dashboard (hosted onboarding, bank payouts).
+4. Webhooks, both pointing at `https://<your-app>/api/stripe/webhook`:
+   - **Webhook endpoint** (snapshot events): `payment_intent.succeeded`, `payment_intent.payment_failed` → `STRIPE_WEBHOOK_SECRET`
+   - **Event destination** (thin events, Accounts v2): `v2.core.account[configuration.recipient].capability_status_updated` → `STRIPE_V2_WEBHOOK_SECRET`
+   - Local: `stripe listen --forward-to localhost:3000/api/stripe/webhook`
 
 ### 3. Resend
 1. Create an API key at resend.com and put it in `.env.local` (and in Vercel) as `RESEND_API_KEY`.

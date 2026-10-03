@@ -1,6 +1,7 @@
 import "server-only";
 import type Stripe from "stripe";
 import { stripe, accountCanReceive } from "@/lib/stripe";
+import { APP_NAME } from "@/lib/brand";
 import { adminDb } from "@/lib/supabase/admin";
 import { getBilling, upsertBilling } from "@/lib/data";
 import { displayName } from "@/lib/auth";
@@ -20,28 +21,33 @@ export async function ensureCustomer(profile: Profile): Promise<string> {
 export async function ensureConnectedAccount(profile: Profile): Promise<string> {
   const billing = await getBilling(profile.id);
   if (billing.stripe_account_id) return billing.stripe_account_id;
-  const account = await stripe().accounts.create(
+  // Accounts v2 recipient with the Express Dashboard. The platform is the losses collector
+  // (accepted under Connect → Platform profile), which destination charges require.
+  const account = await stripe().v2.core.accounts.create(
     {
-      type: "express",
-      country: "US",
-      email: profile.email,
-      business_type: "individual",
-      capabilities: { transfers: { requested: true } },
-      business_profile: { product_description: "Getting paid back by a community service crew for shared pizza orders." },
+      contact_email: profile.email,
+      display_name: displayName(profile),
+      dashboard: "express",
+      identity: { country: "US", entity_type: "individual" },
+      defaults: {
+        currency: "usd",
+        responsibilities: { fees_collector: "application", losses_collector: "application" },
+        profile: { product_description: `Getting paid back by a community service crew (${APP_NAME}) for shared pizza orders.` },
+      },
+      configuration: { recipient: { capabilities: { stripe_balance: { stripe_transfers: { requested: true } } } } },
       metadata: { user_id: profile.id },
     },
-    { idempotencyKey: `account-${profile.id}` },
+    { idempotencyKey: `account-v2-${profile.id}` },
   );
   await upsertBilling(profile.id, { stripe_account_id: account.id });
   return account.id;
 }
 
 /** Re-reads a connected account and stores whether it can receive payouts. */
-export async function syncConnectedAccount(userId: string, account?: Stripe.Account) {
+export async function syncConnectedAccount(userId: string) {
   const billing = await getBilling(userId);
   if (!billing.stripe_account_id) return false;
-  const acct = account ?? (await stripe().accounts.retrieve(billing.stripe_account_id));
-  const ok = accountCanReceive(acct);
+  const ok = await accountCanReceive(billing.stripe_account_id);
   await adminDb().from("profiles").update({ can_receive: ok }).eq("id", userId);
   return ok;
 }

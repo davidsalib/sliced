@@ -45,8 +45,8 @@ export async function sliceRequest(id: string): Promise<SliceResult> {
 
   // The payer's bank must be able to receive money before anyone is charged.
   const payerBilling = await getBilling(request.payer_id);
-  const account = payerBilling.stripe_account_id ? await stripe().accounts.retrieve(payerBilling.stripe_account_id).catch(() => null) : null;
-  if (!account || !accountCanReceive(account)) {
+  const destination = payerBilling.stripe_account_id;
+  if (!destination || !(await accountCanReceive(destination))) {
     await db
       .from("requests")
       .update({ status: "open", slice_at: new Date(Date.now() + 24 * 3600_000).toISOString() })
@@ -99,7 +99,7 @@ export async function sliceRequest(id: string): Promise<SliceResult> {
           confirm: true,
           description: `Service pizza with ${displayName(payer)} (${settings.crew_name})`,
           statement_descriptor_suffix: "PIZZA",
-          transfer_data: { destination: account.id, amount: plan.transfer },
+          transfer_data: { destination, amount: plan.transfer },
           transfer_group: `request_${id}`,
           metadata: { request_id: id, user_id: p.user_id, share_cents: String(share) },
         },
