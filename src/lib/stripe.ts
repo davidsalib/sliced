@@ -10,17 +10,14 @@ export function stripe(): Stripe {
 }
 
 /**
- * Connected accounts (whoever picks up the pizza) are Accounts v2 "recipients":
- * they can receive transfers from the platform and pay out to their bank.
- * True when Stripe says both are active.
+ * Connected accounts (whoever picks up the pizza) are Accounts v2 "recipients".
+ * Stripe's readiness check for destination charges is the recipient's stripe_transfers
+ * capability; payouts to their bank follow on Stripe's schedule once it's active.
  */
 export async function accountCanReceive(accountId: string): Promise<boolean> {
   try {
     const account = await stripe().v2.core.accounts.retrieve(accountId, { include: ["configuration.recipient"] });
-    const balance = account.configuration?.recipient?.capabilities?.stripe_balance;
-    const transfers = balance?.stripe_transfers?.status;
-    const payouts = balance?.payouts?.status ?? "active";
-    return transfers === "active" && payouts === "active";
+    return account.configuration?.recipient?.capabilities?.stripe_balance?.stripe_transfers?.status === "active";
   } catch {
     return false;
   }

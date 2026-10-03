@@ -99,7 +99,9 @@ export async function sliceRequest(id: string): Promise<SliceResult> {
           confirm: true,
           description: `Service pizza with ${displayName(payer)} (${settings.crew_name})`,
           statement_descriptor_suffix: "PIZZA",
-          transfer_data: { destination, amount: plan.transfer },
+          // Destination charge: the payer receives the charge minus the platform fee (covers Stripe fees).
+          transfer_data: { destination },
+          ...(plan.charge > plan.transfer ? { application_fee_amount: plan.charge - plan.transfer } : {}),
           transfer_group: `request_${id}`,
           metadata: { request_id: id, user_id: p.user_id, share_cents: String(share) },
         },
