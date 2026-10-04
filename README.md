@@ -71,15 +71,34 @@ Import the GitHub repo, add every variable from `.env.example` (set `NEXT_PUBLIC
 - **Supabase pg_cron** (works on free plans): edit the URL and secret in `supabase/cron.sql`, then run it in the SQL editor. It calls the endpoint every 5 minutes.
 - **Vercel Cron** (Pro plan, since Hobby only allows daily jobs): add `{"crons":[{"path":"/api/cron/slice","schedule":"*/5 * * * *"}]}` to `vercel.json`.
 
-## Develop
+## Run it locally
+
+One command from the project root (needs Docker Desktop):
 
 ```bash
-cp .env.example .env.local   # fill in keys
-npm install
-npm run dev
+npm run dev:local        # or ./scripts/dev.sh
 ```
 
+It installs packages if needed, starts **local Supabase** in Docker (applying `supabase/migrations`), writes its keys to `.env.development.local`, and runs the app at http://localhost:3000.
+
+| What | Where |
+| --- | --- |
+| App | http://localhost:3000 |
+| Supabase Studio (tables, auth users) | http://localhost:44323 |
+| Local emails (sign-in codes land here) | http://localhost:44324 |
+
+Local Supabase uses ports 44320–44329, below macOS's temporary-port range, so it doesn't collide with other apps.
+
+**Act as different users:** on localhost a **DEV** pill sits in the bottom-left corner. Tap it to sign in as **Admin**, **Member**, or **Waiting** (signed in, no invite yet). These are real local Supabase users (`admin@pizza.local`, `member@pizza.local`, `waiting@pizza.local`). The buttons and `/api/dev/login` only work under `next dev`, on localhost, against the local Supabase, so they can't touch a hosted project.
+
+Other commands: `npm run db:stop`, `npm run db:reset` (wipe and re-apply migrations), `npm run db:status`. Stripe test keys and the Resend key still go in `.env.local`.
+
 `node scripts/gen-icons.mjs` regenerates the PWA icons.
+
+## Sign-in options
+
+- **Google** (Supabase Google provider; see Setup).
+- **Email code:** people enter their email, get a 6-digit code, and type it in. Locally the email lands in http://localhost:44324. On your hosted project, open Authentication → Emails and make the **Magic link** and **Confirm signup** templates show the code with `{{ .Token }}` (copy `supabase/templates/sign-in-code.html`).
 
 ## Map
 

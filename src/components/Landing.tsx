@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Pizza, type PizzaSlice } from "@/components/Pizza";
 import { FloatingSlices } from "@/components/FloatingSlices";
 import { GoogleButton } from "@/components/GoogleButton";
+import { SignInOptions } from "@/components/EmailCodeSignIn";
 import { Pep } from "@/components/Toppings";
 import { APP_NAME } from "@/lib/brand";
 
@@ -67,7 +68,7 @@ export function Landing({ notice }: { notice?: string }) {
       </div>
       {notice && <p className="rounded-2xl bg-oven-3 p-4 text-center font-semibold text-cheese">{notice}</p>}
       <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5 }}>
-        <GoogleButton />
+        <SignInOptions google={<GoogleButton />} />
       </motion.div>
       <p className="pb-24 text-center text-xs text-dough/70">Baked in San Francisco, under the fog.</p>
     </main>

@@ -9,7 +9,12 @@
     "lint": "eslint",
     "email:test": "node --env-file-if-exists=.env.local scripts/send-test-email.mjs",
     "stripe:smoke": "node --env-file-if-exists=.env.local --experimental-strip-types --no-warnings scripts/stripe-smoke.mjs",
-    "test:fees": "node --experimental-strip-types --no-warnings scripts/fees.test.ts"
+    "test:fees": "node --experimental-strip-types --no-warnings scripts/fees.test.ts",
+    "dev:local": "bash scripts/dev.sh",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "db:status": "supabase status"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^7.0.0",

@@ -1,0 +1,2 @@
+-- Optional local seed data. Runs after migrations on `npm run db:reset`.
+-- Test users come from the dev sign-in buttons instead (see src/app/api/dev/login).

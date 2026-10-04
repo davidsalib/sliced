@@ -1,7 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Figtree } from "next/font/google";
 import { Backdrop } from "@/components/Backdrop";
+import { headers } from "next/headers";
+import { DevPanel } from "@/components/DevPanel";
 import { ServiceWorker } from "@/components/ServiceWorker";
+import { getViewer } from "@/lib/auth";
+import { DEV_USERS, devToolsEnabled } from "@/lib/dev";
 import { CheeseDrip } from "@/components/Toppings";
 import { APP_NAME, APP_TAGLINE } from "@/lib/brand";
 import "./globals.css";
@@ -27,7 +31,17 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+/** Which dev test user is signed in, if any (localhost only). */
+async function devState() {
+  const host = (await headers()).get("host");
+  if (!devToolsEnabled(host)) return null;
+  const viewer = await getViewer().catch(() => null);
+  const kind = viewer ? (Object.entries(DEV_USERS).find(([, u]) => u.email === viewer.email)?.[0] ?? viewer.role) : null;
+  return { current: kind };
+}
+
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const dev = process.env.NODE_ENV === "development" ? await devState() : null;
   return (
     <html lang="en" className={`${display.variable} ${body.variable} h-full antialiased`}>
       <body className="min-h-full">
@@ -35,6 +49,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <CheeseDrip className="fixed inset-x-0 top-0 z-50" />
         {children}
         <ServiceWorker />
+        {dev && <DevPanel current={dev.current} />}
       </body>
     </html>
   );

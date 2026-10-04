@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-expressions -- ternary pass/fail logging */
 // End-to-end Stripe check for the pizza split, in TEST MODE ONLY.
 // Creates throwaway test objects, runs the same calls the app makes, then deletes them.
 // Usage: npm run stripe:smoke
